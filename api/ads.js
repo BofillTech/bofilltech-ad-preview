@@ -133,6 +133,7 @@ export default async function handler(req, res) {
     try {
       perfRows = await windsorQuery(WINDSOR_KEY, {
         fields: [
+          "account_id",
           "ad_name",
           "ad_type",
           "ad_id",
@@ -151,6 +152,9 @@ export default async function handler(req, res) {
         detail: perfErr.message,
       });
     }
+
+    // Windsor REST API ignores the accounts param, so filter server-side
+    perfRows = perfRows.filter((row) => row.account_id === account);
 
     if (!perfRows || perfRows.length === 0) {
       return res.json({
@@ -172,13 +176,13 @@ export default async function handler(req, res) {
     let imgMap = {};
     try {
       const imgRows = await windsorQuery(WINDSOR_KEY, {
-        fields: ["ad_id", "image_url"],
+        fields: ["account_id", "ad_id", "image_url"],
         date_preset: "last_30d",
         accounts: account,
       });
 
       for (const row of imgRows) {
-        if (row.image_url) {
+        if (row.image_url && row.account_id === account) {
           imgMap[String(row.ad_id)] = row.image_url;
         }
       }
@@ -228,5 +232,4 @@ export default async function handler(req, res) {
       .status(500)
       .json({ error: "Internal server error", detail: err.message });
   }
-  
-  }
+}
