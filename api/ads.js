@@ -1,6 +1,6 @@
-// /api/ads.js — Serverless function for Vercel
+// /api/ads.js â Serverless function for Vercel
 // Calls Windsor.ai REST API directly for Google Ads data.
-// No LLM intermediary — deterministic queries with hardcoded filters.
+// No LLM intermediary â deterministic queries with hardcoded filters.
 //
 // Required Vercel env var: WINDSOR_API_KEY
 // Windsor REST endpoint: https://connectors.windsor.ai/google_ads
@@ -50,9 +50,8 @@ const WINDSOR_BASE = "https://connectors.windsor.ai/google_ads";
 async function windsorQuery(apiKey, params) {
   const url = new URL(WINDSOR_BASE);
   url.searchParams.set("api_key", apiKey);
-  url.searchParams.set("connector", "google_ads");
 
-  // Fields — comma-separated
+  // Fields â comma-separated, no spaces
   if (params.fields) {
     url.searchParams.set("fields", params.fields.join(","));
   }
@@ -62,15 +61,18 @@ async function windsorQuery(apiKey, params) {
     url.searchParams.set("date_preset", params.date_preset);
   }
 
-  // Account — single account per query (required for ad-level data)
+  // Account â single account per query (required for ad-level data)
   if (params.accounts) {
     url.searchParams.set("accounts", params.accounts);
   }
 
-  // Filters — JSON-encoded array, e.g. [["clicks","gte",3]]
+  // Filters â JSON-encoded array, e.g. [["clicks","gte",3]]
   if (params.filter) {
     url.searchParams.set("filter", JSON.stringify(params.filter));
   }
+
+  // Explicitly request JSON output
+  url.searchParams.set("_renderer", "json");
 
   const response = await fetch(url.toString(), {
     method: "GET",
@@ -124,7 +126,7 @@ export default async function handler(req, res) {
 
   try {
     // ------------------------------------------------------------------
-    // Query 1 — Ad performance (with clicks >= 3 filter to stay under
+    // Query 1 â Ad performance (with clicks >= 3 filter to stay under
     //           Windsor's response-size limit for accounts with 400+ ads)
     // ------------------------------------------------------------------
     let perfRows = [];
@@ -164,7 +166,7 @@ export default async function handler(req, res) {
     }
 
     // ------------------------------------------------------------------
-    // Query 2 — Image URLs (separate query; image_url cannot be combined
+    // Query 2 â Image URLs (separate query; image_url cannot be combined
     //           with performance fields per Windsor.ai constraints)
     // ------------------------------------------------------------------
     let imgMap = {};
@@ -181,7 +183,7 @@ export default async function handler(req, res) {
         }
       }
     } catch (imgErr) {
-      // Non-fatal — we still return perf data without images
+      // Non-fatal â we still return perf data without images
       console.error("Windsor image query failed (non-fatal):", imgErr.message);
     }
 
@@ -226,4 +228,3 @@ export default async function handler(req, res) {
       .status(500)
       .json({ error: "Internal server error", detail: err.message });
   }
-}
